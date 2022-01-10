@@ -38,7 +38,7 @@ world <- ne_countries(scale = "medium", returnclass = "sf")
 # Define UI for application that draws a histogram
 ui <- navbarPage("Delayed Flights",
                  tabPanel("Histogram",
-                          titlePanel("Histogram Panel"),
+                          titlePanel("Visualizacion del histograma"),
                           # Sidebar with a slider input for number of bins 
                           sidebarLayout(
                             sidebarPanel(
@@ -56,7 +56,7 @@ ui <- navbarPage("Delayed Flights",
                           )
                   ),
                  tabPanel("Map",
-                          titlePanel("Map Panel"),
+                          titlePanel("Visualizacion del mapa"),
                           verticalLayout(
                             plotOutput("mapPlot"),
                             wellPanel(
@@ -69,7 +69,7 @@ ui <- navbarPage("Delayed Flights",
                           )
                   ),
                  tabPanel("DateSlider",
-                          titlePanel("Date Slider Panel"),
+                          titlePanel("Visualizacion del Date Slider"),
                           verticalLayout(
                             wellPanel(
                               dateRangeInput("daterange", "Elige el rango de fechas a mostrar:",
@@ -84,7 +84,7 @@ ui <- navbarPage("Delayed Flights",
                           )
                   ),
                  tabPanel("BarPlot Semanas",
-                          titlePanel("Bar Plot Panel"),
+                          titlePanel("Visualizacion del Bar Plot"),
                           verticalLayout(
                             plotOutput("weekBarPlot"),
                           )
@@ -131,8 +131,8 @@ server <- function(input, output) {
                                pad_x = unit(0.25, "in"), pad_y = unit(0.25, "in")) +
         annotation_scale(location = 'bl', width_hint = 0.5) +
         coord_sf(xlim = c(-125, -64), ylim = c(24, 50)) +
-        labs(title = 'Title',
-             caption = 'Caption') +
+        labs(title = 'Mapa',
+             caption = 'Visualizacion de las coordenadas extraidas') +
         theme(legend.position = "None")
     })
     
@@ -154,9 +154,9 @@ server <- function(input, output) {
       ggplot(na.omit(dat1), aes(x = variable, y = value,fill = variable)) +
         geom_boxplot() +
         coord_flip() +
-        labs(x = 'Likelihood weather is causing delay', y = 'Percentage of delayed flights',
-             title = 'Percentage of delayed flights vs likelihood of weather causing the delay',
-             subtitle = "Subtitle",
+        labs(x = 'Tipos de retrasos', y = 'Porcentaje de los vuelos atrasados',
+             subtitle = 'Subtitulo',
+             title = 'Boxplot entre los tipos de retrasos y el porcentaje de los vuelos atrasados',
              caption = 'Source: publicly available data from DoT') +
         theme(plot.caption = element_text(vjust = 7))
     })
@@ -170,10 +170,10 @@ server <- function(input, output) {
       ggplot(data=df1[filtro,], aes(x=as.Date(Date), group=CancellationCode, color=CancellationCode)) +
         geom_density() +
         scale_x_date(date_breaks = '1 week', date_labels = '%b %d') +
-        labs(x = 'Likelihood weather is causing delay', y = 'Percentage of delayed flights',
-             title = 'Percentage of delayed flights vs likelihood of weather causing the delay',
-             subtitle = "Subtitle",
-             caption = 'Source: publicly available data from DoT') +
+        labs(x = 'Semana', y = 'Porcentaje de los vuelos cancelados',
+             title = 'Numero de vuelos que han sido cancelados semanalmente',
+             subtitle = 'Subtitulo',
+             caption = 'Cada color representa un tipo de codigo de cancelacion') +
         theme(plot.caption = element_text(vjust = 7), axis.text.x = element_text(angle = 90))
       
     })
@@ -224,10 +224,10 @@ server <- function(input, output) {
                  position = 'stack', stat = 'identity') +
         scale_x_date(date_breaks = '1 week', date_labels = '%b %d') +
         scale_y_continuous(labels = function(x) paste0(x*100, '%')) +
-        labs(x = 'Time', y = 'Percentage of weekly flights', fill = 'Delay type',
-             title = 'Breakdown of delay type of flights in the northern part of the US in 2015',
-             subtitle = 'States that are part of the analysis include AK, IL, IN, MA, ME, MI, MN, NH, NY, VT',
-             caption = 'Source: publicly available data from DoT') +
+        labs(x = 'Dia de la semana', y = 'Porcentaje de vuelos', fill = 'Delay type',
+             title = 'Tipos de retrasos en los vuelos a la semana',
+             subtitle = 'Subtitulo',
+             caption = 'Cada color representa un tipo de retraso') +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.75), plot.caption = element_text(vjust = 7))
       
     })
@@ -268,8 +268,8 @@ server <- function(input, output) {
         geom_line(aes(x = Date, y = TotalCount), color = 'green4') +
         geom_line(aes(x = Date, y = DelayedCount), color = 'red') +
         scale_x_date(date_breaks = '1 week', date_labels = '%b %d') +
-        labs(x = 'Time', y = 'Number of daily flights', caption = 'Source: publicly available data from DoT',
-             title = 'Number of flights in the US in 2015') +
+        labs(x = 'Semana', y = 'Porcentaje de vuelos', caption = 'Source: publicly available data from DoT',
+             title = 'Porcentaje de vuelos cancelados respecto al total por cada semana') +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.75), plot.caption = element_text(vjust = 7),
               axis.title.y.left = element_text(color = 'green4'),
               axis.title.y.right = element_text(color = 'red'))
