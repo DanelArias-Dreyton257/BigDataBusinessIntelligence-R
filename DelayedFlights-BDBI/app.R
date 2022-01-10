@@ -131,8 +131,8 @@ server <- function(input, output) {
                                pad_x = unit(0.25, "in"), pad_y = unit(0.25, "in")) +
         annotation_scale(location = 'bl', width_hint = 0.5) +
         coord_sf(xlim = c(-125, -64), ylim = c(24, 50)) +
-        labs(title = 'Mapa',
-             caption = 'Visualizacion de las coordenadas extraidas') +
+        labs(title = 'Mapa', x="Longitud representada en coordenada X", y="Latitud representada en coordenada Y",
+             caption = 'Visualizacion de las coordenadas extraidas de Wikipedia') +
         theme(legend.position = "None")
     })
     
@@ -154,11 +154,11 @@ server <- function(input, output) {
       ggplot(na.omit(dat1), aes(x = variable, y = value,fill = variable)) +
         geom_boxplot() +
         coord_flip() +
-        labs(x = 'Tipos de retrasos', y = 'Porcentaje de los vuelos atrasados',
+        labs(x = 'Tipos de retrasos', y = 'Distribución de la cantidad de retraso en minutos',
              subtitle = 'Subtitulo',
-             title = 'Boxplot entre los tipos de retrasos y el porcentaje de los vuelos atrasados',
-             caption = 'Source: publicly available data from DoT') +
-        theme(plot.caption = element_text(vjust = 7))
+             title = 'Visualización de la distribución de los diferentes tipos de retrasos',
+             caption = 'Los datos representados corresponden con el rango de fechas elegido') +
+        theme(plot.caption = element_text(vjust = -10))
     })
     
     output$cancelCodePlot <- renderPlot({
@@ -167,13 +167,19 @@ server <- function(input, output) {
       
       filtro = df1$Date >= start & df1$Date<=end
       
+      df1$CancellationCode[df1$CancellationCode=="A"]="A-Carrier"
+      df1$CancellationCode[df1$CancellationCode=="B"]="B-Weather"
+      df1$CancellationCode[df1$CancellationCode=="C"]="C-NAS"
+      df1$CancellationCode[df1$CancellationCode=="D"]="D-Security"
+      df1$CancellationCode[df1$CancellationCode=="N"]="N-Not Cancelled"
+      
       ggplot(data=df1[filtro,], aes(x=as.Date(Date), group=CancellationCode, color=CancellationCode)) +
         geom_density() +
         scale_x_date(date_breaks = '1 week', date_labels = '%b %d') +
-        labs(x = 'Semana', y = 'Porcentaje de los vuelos cancelados',
-             title = 'Numero de vuelos que han sido cancelados semanalmente',
+        labs(fill='Tipo de cancelación según código. Formato: \"Código-Texto\"', x = 'Semanas de 2008', y = 'Porcentaje de los vuelos cancelados',
+             title = 'Distribución vuelos cancelados semanalmente por tipo',
              subtitle = 'Subtitulo',
-             caption = 'Cada color representa un tipo de codigo de cancelacion') +
+             caption = 'Caption') +
         theme(plot.caption = element_text(vjust = 7), axis.text.x = element_text(angle = 90))
       
     })
@@ -224,10 +230,10 @@ server <- function(input, output) {
                  position = 'stack', stat = 'identity') +
         scale_x_date(date_breaks = '1 week', date_labels = '%b %d') +
         scale_y_continuous(labels = function(x) paste0(x*100, '%')) +
-        labs(x = 'Dia de la semana', y = 'Porcentaje de vuelos', fill = 'Delay type',
-             title = 'Tipos de retrasos en los vuelos a la semana',
-             subtitle = 'Subtitulo',
-             caption = 'Cada color representa un tipo de retraso') +
+        labs(x = 'Semanas de 2008', y = 'Porcentaje de vuelos', fill = 'Delay type',
+             title = 'Distribución de los tipos de retraso en los vuelos retrasados y el porcentaje influido en cada uno.',
+             subtitle = '#TODO: Algo sobre como solo tenemos en cuenta los vuelos que han sido retrasados, si no hay no ha columna',
+             caption = 'Caption') +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.75), plot.caption = element_text(vjust = 7))
       
     })
@@ -268,8 +274,8 @@ server <- function(input, output) {
         geom_line(aes(x = Date, y = TotalCount), color = 'green4') +
         geom_line(aes(x = Date, y = DelayedCount), color = 'red') +
         scale_x_date(date_breaks = '1 week', date_labels = '%b %d') +
-        labs(x = 'Semana', y = 'Porcentaje de vuelos', caption = 'Source: publicly available data from DoT',
-             title = 'Porcentaje de vuelos cancelados respecto al total por cada semana') +
+        labs(x = 'Semanas de 2008', y = 'Porcentaje de vuelos', caption = 'Source: publicly available data from DoT',
+             title = 'Comparación de vuelos retrasados respecto al total por cada semana') +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.75), plot.caption = element_text(vjust = 7),
               axis.title.y.left = element_text(color = 'green4'),
               axis.title.y.right = element_text(color = 'red'))
