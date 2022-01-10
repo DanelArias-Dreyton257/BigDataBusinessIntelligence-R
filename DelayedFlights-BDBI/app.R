@@ -61,7 +61,7 @@ ui <- navbarPage("Delayed Flights",
                             plotOutput("mapPlot"),
                             wellPanel(
                               selectInput("state",
-                                          "Choose a state:",
+                                          "Elige un estado de origen:",
                                           states$ID
                               )
                             )
@@ -72,7 +72,7 @@ ui <- navbarPage("Delayed Flights",
                           titlePanel("Date Slider Panel"),
                           verticalLayout(
                             wellPanel(
-                              dateRangeInput("daterange", "Date range:",
+                              dateRangeInput("daterange", "Elige el rango de fechas a mostrar:",
                                              language = "es",
                                              weekstart = 1,
                                              start="2008-01-01",
