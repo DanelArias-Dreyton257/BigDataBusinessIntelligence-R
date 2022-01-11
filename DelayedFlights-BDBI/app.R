@@ -21,6 +21,7 @@ theme_set(theme_bw())                    # Set theme for all plots
 library("rnaturalearthdata")
 library("dplyr")
 library(data.table)
+library(ggalt)
 
 df1 <- read.csv('vuelosLimpioMap.csv', header=TRUE, sep=",")
 
@@ -37,27 +38,20 @@ world <- ne_countries(scale = "medium", returnclass = "sf")
 
 # Define UI for application that draws a histogram
 ui <- navbarPage("Delayed Flights",
-                 tabPanel("Histogram",
-                          titlePanel("Visualizacion del histograma"),
-                          # Sidebar with a slider input for number of bins 
-                          sidebarLayout(
-                            sidebarPanel(
-                              sliderInput("bins",
-                                          "Number of bins:",
-                                          min = 1,
-                                          max = 15,
-                                          value = 5)
-                            ),
-                            
-                            # Show a plot of the generated distribution
-                            mainPanel(
-                              plotOutput("distPlot"),
-                            )
-                          )
-                  ),
-                 tabPanel("Map",
+                 tabPanel("Introducción",
                           titlePanel("Visualizacion del mapa"),
                           verticalLayout(
+                            h3("VIVA ESPAÑA")  
+                          )
+                 ),
+                 tabPanel("Análisis por localización",
+                          titlePanel("Visualizacion del mapa"),
+                          verticalLayout(
+                            plotOutput("heatmap"),
+                            sidebarLayout(
+                              sidebarPanel(tableOutput("fTable")),
+                              mainPanel(plotOutput("lolipop"))
+                            ),
                             plotOutput("mapPlot"),
                             wellPanel(
                               selectInput("state",
@@ -68,7 +62,14 @@ ui <- navbarPage("Delayed Flights",
                             
                           )
                   ),
-                 tabPanel("DateSlider",
+                 tabPanel("Visión general de 2008",
+                          titlePanel("Visualizacion del Bar Plot"),
+                          verticalLayout(
+                            plotOutput("weekBarPlot"),
+                            plotOutput("cancelledPlot")
+                          )
+                 ),
+                 tabPanel("Análisis en periodos específicos",
                           titlePanel("Visualizacion del Date Slider"),
                           verticalLayout(
                             wellPanel(
@@ -78,40 +79,37 @@ ui <- navbarPage("Delayed Flights",
                                              start="2008-01-01",
                                              end = "2008-12-31"),
                             ),
+                            plotOutput("greenRedPlot"),
+                            plotOutput("cancellationPlot"),
                             plotOutput("delayBoxPlot"),
-                            plotOutput("cancelCodePlot"),
-                            plotOutput("greenRedPlot")
                           )
                   ),
-                 tabPanel("BarPlot Semanas",
-                          titlePanel("Visualizacion del Bar Plot"),
+                 tabPanel("Correlación",
+                          titlePanel("Visualizacion del mapa"),
                           verticalLayout(
-                            plotOutput("weekBarPlot"),
+                            h3("VIVA ESPAÑA")  
                           )
-                 )
+                 ),
+                 tabPanel("Vuelos sensibles",
+                          titlePanel("Visualizacion del mapa"),
+                          verticalLayout(
+                            plotOutput("greenRedPlot"),
+                            plotOutput("cancellationPlot"),
+                            plotOutput("delayBoxPlot"),
+                          )
+                 ),
+                 tabPanel("Conclusiones",
+                          titlePanel("Visualizacion del mapa"),
+                          verticalLayout(
+                            h3("VIVA ESPAÑA")  
+                          )
+                 ),
+                 
     )
 
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-
-    output$distPlot <- renderPlot({
-      
-        filtro = (is.na(df1$TotalTimeDifference)==FALSE) & (df1$TotalTimeDifference >= -7) & (df1$TotalTimeDifference<=10)
-        
-        x <- df1$TotalTimeDifference[filtro]
-        
-        bins <- seq(min(x), max(x), length.out = input$bins + 1)
-        
-        hist(x, breaks = bins, col = 'darkgray', border = 'white')
-      
-        # generate bins based on input$bins from ui.R
-        #x    <- faithful[, 2]
-        #bins <- seq(min(x), max(x), length.out = input$bins + 1)
-
-        # draw the histogram with the specified number of bins
-        #hist(x, breaks = bins, col = 'darkgray', border = 'white')
-    })
     
     output$mapPlot <- renderPlot({
       
@@ -161,26 +159,55 @@ server <- function(input, output) {
         theme(plot.caption = element_text(vjust = -10))
     })
     
-    output$cancelCodePlot <- renderPlot({
+    output$cancellationPlot <- renderPlot({
       start = as.Date(input$daterange[1])
       end = as.Date(input$daterange[2])
       
-      filtro = df1$Date >= start & df1$Date<=end
+      dfCode <-df1[df1$Cancelled==1,]
       
-      df1$CancellationCode[df1$CancellationCode=="A"]="A-Carrier"
-      df1$CancellationCode[df1$CancellationCode=="B"]="B-Weather"
-      df1$CancellationCode[df1$CancellationCode=="C"]="C-NAS"
-      df1$CancellationCode[df1$CancellationCode=="D"]="D-Security"
-      df1$CancellationCode[df1$CancellationCode=="N"]="N-Not Cancelled"
+      filtro = dfCode$Date >= start & dfCode$Date<=end
       
-      ggplot(data=df1[filtro,], aes(x=as.Date(Date), group=CancellationCode, color=CancellationCode)) +
-        geom_density() +
-        scale_x_date(date_breaks = '1 week', date_labels = '%b %d') +
-        labs(fill='Tipo de cancelación según código. Formato: \"Código-Texto\"', x = 'Semanas de 2008', y = 'Porcentaje de los vuelos cancelados',
-             title = 'Distribución vuelos cancelados semanalmente por tipo',
-             subtitle = 'Subtitulo',
-             caption = 'Caption') +
-        theme(plot.caption = element_text(vjust = 7), axis.text.x = element_text(angle = 90))
+      dfCode<-dfCode[filtro,]
+      
+      dfCode$CancellationCode[dfCode$CancellationCode=="A"]="A-Carrier"
+      dfCode$CancellationCode[dfCode$CancellationCode=="B"]="B-Weather"
+      dfCode$CancellationCode[dfCode$CancellationCode=="C"]="C-NAS"
+      dfCode$CancellationCode[dfCode$CancellationCode=="D"]="D-Security"
+      
+      dfCode<-aggregate(x=dfCode %>%select(X), by=list(dfCode$CancellationCode), FUN=length)
+      
+      dfCode<-dfCode %>% rename(
+        CancellationCode = Group.1,
+        Count = X
+      )
+      
+      ggplot(dfCode, aes(x="", y=Count, fill=CancellationCode)) +
+        geom_bar(stat="identity", width=1, color="white") +
+        coord_polar("y", start=0) +
+        theme_void()+
+        labs(title = paste('BlaBlaBla',sum(dfCode$Count)), x="Longitud representada en coordenada X", y="Latitud representada en coordenada Y",
+             caption = 'Visualizacion de las coordenadas extraidas de Wikipedia')
+      
+    })
+    
+    output$cancelledPlot <- renderPlot({
+      
+      dfpata<-aggregate(x=df1 %>% select(Cancelled),by=list(cut(as.Date(df1$Date), "week"),df1$Cancelled),FUN=length)
+      
+      dfpata <- dfpata %>% rename(Week = Group.1,
+                                  Cancelled=Group.2,
+                                  Count=Cancelled)
+      
+      ggplot(data = dfpata) +
+        geom_bar(aes(x = as.Date(Week), y = Count, fill = factor(Cancelled)),
+                 position = 'dodge', stat = 'identity')+
+        scale_x_date(date_breaks = '1 month', date_labels = '%b %d') +
+        labs(x = 'Time', y = 'Percentage of weekly flights', y="y label", fill = 'Delay type',
+             title = 'Breakdown of delay type of flights in the northern part of the US in 2015',
+             subtitle = 'States that are part of the analysis include AK, IL, IN, MA, ME, MI, MN, NH, NY, VT',
+             caption = 'Source: publicly available data from DoT') +
+        theme(axis.text.x = element_text(angle = 25, vjust = 0.75), plot.caption = element_text(vjust = 7))+
+        scale_fill_discrete(name = "Cancelado", labels = c("No Cancelado", "Cancelado"))
       
     })
     
@@ -274,12 +301,61 @@ server <- function(input, output) {
         geom_line(aes(x = Date, y = TotalCount), color = 'green4') +
         geom_line(aes(x = Date, y = DelayedCount), color = 'red') +
         scale_x_date(date_breaks = '1 week', date_labels = '%b %d') +
-        labs(x = 'Semanas de 2008', y = 'Porcentaje de vuelos', caption = 'Source: publicly available data from DoT',
+        labs(x = 'Semanas de 2008', y = 'Cantidad de vuelos', caption = 'Source: publicly available data from DoT',
              title = 'Comparación de vuelos retrasados respecto al total por cada semana') +
         theme(axis.text.x = element_text(angle = 90, vjust = 0.75), plot.caption = element_text(vjust = 7),
               axis.title.y.left = element_text(color = 'green4'),
               axis.title.y.right = element_text(color = 'red'))
       
+    })
+    
+    dfheat<-aggregate(x=df2 %>%select(X), by=list(df2$OriginState, df2$DestState), FUN=length)
+    
+    dfheat<-dfheat %>% rename(
+      OriginState = Group.1,
+      DestState = Group.2,
+      Count = X
+    )
+    dfheat<-dfheat[order(-dfheat$Count),]
+    
+    output$heatmap<- renderPlot({
+      ggplot(data = dfheat) +
+        geom_tile(aes(x = OriginState, y = DestState, fill=Count), color = 'black') +
+        scale_fill_distiller(palette = 'Spectral') +
+        labs(x = 'Estado de destino', y = 'Estado de origen', fill = 'Numero de vuelos',
+             title = 'Mapa de calor de los vuelos relizados',
+             subtitle = 'Según estado de origen y estado de destino',
+             caption = 'caption') +
+        theme(panel.grid.major = element_blank(),
+              plot.caption = element_text(vjust = 7), axis.text.x = element_text(angle = 90, hjust=1), )
+    })
+    
+    output$fTable <- renderTable(dfheat[1:5,])
+    
+    output$lolipop <-renderPlot({
+      dfLoli<- dfheat[1:5,]
+      
+      df3<-aggregate(x=df2 %>%select(CRSElapsedTime,ActualElapsedTime), by=list(df2$OriginState, df2$DestState), FUN=mean)
+      
+      df3<-df3 %>% rename(
+        OriginState = Group.1,
+        DestState = Group.2,
+      )
+      
+      dfLoli$Vuelo = paste(paste(dfLoli$OriginState,"-"), dfLoli$DestState)
+      df3$Vuelo = paste(paste(df3$OriginState,"-"), df3$DestState) 
+      
+      dfLoli <- dfLoli %>% left_join(df3, by=c("Vuelo"))
+      dfLoli <- dfLoli %>%select(Vuelo, CRSElapsedTime, ActualElapsedTime)
+      
+      dfLoli<-dfLoli[order(dfLoli$ActualElapsedTime),]
+      
+      ggplot(dfLoli, aes(y=Vuelo, x=CRSElapsedTime, xend=ActualElapsedTime)) +
+        geom_dumbbell(size=3, color="#e3e2e1",
+                      colour_x = "#5b8124", colour_xend = "#bad744") +
+        labs(x="Media del tiempo transcurrido en minutos",title="Tiempo esperado vs Tiempo real en los vuelos mayor realizados de 2008") +
+        theme_minimal() +
+        theme(panel.grid.major.x=element_line(size=0.05))
     })
 }
 
